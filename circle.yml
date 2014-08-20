@@ -4,4 +4,4 @@ machine:
 
 dependencies:
   pre:
-    - rm /home/ubuntu/dibble/venv/lib/python2.7/site-packages/dibble-*.egg
+    - rm -f /home/ubuntu/dibble/venv/lib/python2.7/site-packages/dibble-*.egg
