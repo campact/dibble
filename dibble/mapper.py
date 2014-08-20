@@ -52,10 +52,10 @@ class ModelMapper(object):
         kw.setdefault('slave_ok', self.collection.slave_okay)
         kw.setdefault('read_preference', self.collection.read_preference)
 
-        if not 'tag_sets' in kw:
+        if 'tag_sets' not in kw:
             kw['tag_sets'] = self.collection.tag_sets
 
-        if not 'secondary_acceptable_latency_ms' in kw:
+        if 'secondary_acceptable_latency_ms' not in kw:
             kw['secondary_acceptable_latency_ms'] = self.collection.secondary_acceptable_latency_ms
 
         return ModelCursor(self, self.collection, spec, *args, **kw)
