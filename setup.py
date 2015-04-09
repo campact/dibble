@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='dibble',
-      version='0.0.4',
+      version='0.0.5',
       description='Mongodb Object Mapper',
       url='https://github.com/voxelbrain/dibble',
       packages=find_packages(exclude=['tests']),
