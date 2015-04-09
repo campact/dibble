@@ -6,7 +6,8 @@ import dibble.model
 
 
 class FakeModel(object):
-    reload = lambda self, force=True: None
+    def reload(self, force=True):
+        return None
 
 
 def test_unbound():
