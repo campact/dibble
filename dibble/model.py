@@ -116,8 +116,7 @@ class ModelBase(object):
             if not self._id.defined:
                 raise UnsavedModelError()
 
-            new = self._mapper.find_one({'_id': self._id.value}, slave_ok=False,
-                                        read_preference=pymongo.ReadPreference.PRIMARY)
+            new = self._mapper.find_one({'_id': self._id.value}, read_preference=pymongo.ReadPreference.PRIMARY)
 
             for name, field in new._fields.items():
                 if name in self._fields:
