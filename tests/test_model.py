@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import dibble.fields
 import dibble.model
-from nose.tools import raises, eq_, assert_in, assert_false, assert_true
+from nose.tools import raises, eq_, assert_false, assert_true
 
 
 class SimpleModel(dibble.model.Model):
@@ -141,7 +141,7 @@ def test_iter():
     m = TestModel(a=1, b=2)
     values = dict(m)
 
-    eq_(values.keys(), ['a', 'b'])
+    eq_(sorted(values.keys()), ['a', 'b'])
     eq_(values, {'a': 1, 'b': 2})
 
     m.c.set(3)
@@ -222,5 +222,8 @@ def test_model_with_properties():
 
 def test_model_repr():
     m = SimpleModel({'xbool': True, 'xfloat': 0.1})
+    r = repr(m)
 
-    eq_(repr(m), "<SimpleModel({'xfloat': 0.1, 'xbool': True})>")
+    assert_true(r.startswith('<SimpleModel({'))
+    assert_true(r.endswith('})>'))
+    eq_(r[13:-2], repr(dict(m)))

@@ -121,11 +121,11 @@ class AddToSetMixin(object):
 
         if isinstance(value, collections.Mapping) and ('$each' in value):
             for v in value['$each']:
-                if not v in newvalue:
+                if v not in newvalue:
                     newvalue.append(v)
 
         else:
-            if not value in newvalue:
+            if value not in newvalue:
                 newvalue.append(value)
 
         self._setvalue(newvalue)

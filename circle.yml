@@ -1,0 +1,7 @@
+machine:
+  python:
+    version: 2.7.3
+
+dependencies:
+  pre:
+    - rm -f /home/ubuntu/dibble/venv/lib/python2.7/site-packages/dibble-*.egg
