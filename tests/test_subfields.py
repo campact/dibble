@@ -14,7 +14,7 @@ class TestModel(dibble.model.Model):
 
 
 def get_db():
-    con = pymongo.Connection()
+    con = pymongo.MongoClient()
 
     return con[DBNAME]
 
