@@ -132,7 +132,6 @@ class ModelBase(object):
         if not self._mapper:
             raise UnboundModelError()
 
-        kw.setdefault('safe', True)
         self._requires_reload = False
 
         if self.is_new:
@@ -140,8 +139,6 @@ class ModelBase(object):
 
             if '_id' in kw:
                 doc['_id'] = kw.pop('_id')
-
-            kw['safe'] = True
 
             oid = self._mapper.save(doc, *arg, **kw)
             self._id.reset(oid)

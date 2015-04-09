@@ -7,7 +7,7 @@ setup(name='dibble',
       description='Mongodb Object Mapper',
       url='https://github.com/voxelbrain/dibble',
       packages=find_packages(exclude=['tests']),
-      install_requires=['pymongo'],
+      install_requires=['pymongo>=2.4'],
       tests_require=['nose'],
       setup_requires=['setuptools-git'],
       test_suite='nose.collector')
