@@ -6,7 +6,6 @@ import dibble.mapper
 from nose import with_setup
 from nose.tools import eq_, assert_dict_contains_subset, raises, assert_dict_equal
 
-
 DBNAME = 'dibbletest'
 
 
@@ -27,26 +26,20 @@ class ReloadTestModel(dibble.model.Model):
 
 
 def get_db():
-    con = pymongo.MongoClient()
-
-    return con[DBNAME]
-
-
-def get_mapper():
-    db = get_db()
-
-    return dibble.mapper.ModelMapper(UserModel, db.user)
+    client = pymongo.MongoClient()
+    return client[DBNAME]
 
 
 def setup_db():
     db = get_db()
     [db.drop_collection(x) for x in db.collection_names() if not x.startswith('system.')]
-    db.connection.drop_database(DBNAME)
+    db.client.drop_database(DBNAME)
 
 
 @with_setup(setup_db)
 def test_modelmapper_new():
-    users = get_mapper()
+    db = get_db()
+    users = dibble.mapper.ModelMapper(UserModel, db.user)
 
     username = 'testuser'
     user = users(name=username)
@@ -57,58 +50,58 @@ def test_modelmapper_new():
 
 @with_setup(setup_db)
 def test_modelmapper_count():
-    mapper = get_mapper()
+    mapper = dibble.mapper.ModelMapper(UserModel, get_db().user)
     eq_(mapper.count(), 0)
 
 
 @with_setup(setup_db)
-def test_modelmapper_save_and_find_one():
-    users = get_mapper()
+def test_modelmapper_insert_one_and_count():
+    users = dibble.mapper.ModelMapper(UserModel, get_db().user)
 
     dummy_user = {'name': 'test'}
-    users.save(dummy_user)
+    users.insert_one(dummy_user)
 
     eq_(users.count(), 1)
 
 
 @with_setup(setup_db)
 def test_find_generator():
-    users = get_mapper()
+    users = dibble.mapper.ModelMapper(UserModel, get_db().user)
 
     dummy_user = {'name': 'test'}
-    uid = users.save(dummy_user, safe=True)
+    result = users.insert_one(dummy_user)
 
-    for x in range(10):
-        users.save({'name': 'test_' + str(x)})
+    users.insert_many([{'name': 'test_' + str(x)} for x in range(10)])
 
     cursor = users.find({'name': dummy_user['name']})
 
     eq_(cursor.count(), 1)
 
+    # Calling ModelCursor.next()
     db_user = list(cursor)[0]
 
-    eq_(db_user['_id'], uid)
+    eq_(db_user['_id'], result.inserted_id)
     eq_(db_user.name.value, dummy_user['name'])
     eq_(db_user['name'], dummy_user['name'])
 
 
 @with_setup(setup_db)
 def test_find_getitem():
-    users = get_mapper()
+    users = dibble.mapper.ModelMapper(UserModel, get_db().user)
 
     dummy_user = {'name': 'test'}
-    uid = users.save(dummy_user, safe=True)
+    result = users.insert_one(dummy_user)
 
-    for x in range(10):
-        users.save({'name': 'test_' + str(x)})
+    users.insert_many([{'name': 'test_' + str(x)} for x in range(10)])
 
     cursor = users.find({'name': dummy_user['name']})
 
     eq_(cursor.count(), 1)
 
+    # Calling ModelCursor.__getitem__(key)
     db_user = cursor[0]
 
-    eq_(db_user['_id'], uid)
+    eq_(db_user['_id'], result.inserted_id)
     eq_(db_user.name.value, dummy_user['name'])
     eq_(db_user['name'], dummy_user['name'])
 
@@ -124,20 +117,39 @@ def test_modelmapper_model_save():
     user.usernames.push('Foo Bar')
     user.save()
 
+    eq_(users.count(), 1)
+
     u = dict(users.collection.find_one())
     expected = {'logincount': 1, 'username': 'Foo Bar', 'usernames': ['Foo Bar']}
 
     assert_dict_contains_subset(expected, u)
 
-    users.collection.update({}, {'$set': {'username': 'Fumm Fumm'}})
+    users.update_one({}, {'$set': {'username': 'Fumm Fumm'}})
 
     user.logincount.inc(41)
     user.save()
+
+    eq_(users.count(), 1)
 
     u = dict(users.collection.find_one())
     expected = {'logincount': 42, 'username': 'Fumm Fumm', 'usernames': ['Foo Bar']}
 
     assert_dict_contains_subset(expected, u)
+
+
+@with_setup(setup_db)
+def test_modelmapper_model_save_unacknowledged():
+    db = get_db()
+    users = dibble.mapper.ModelMapper(UserModel, db.user)
+    wc = pymongo.write_concern.WriteConcern(w=0)
+
+    for x in range(100):
+        user = users(name='test_' + str(x))
+        user.save(write_concern=wc)
+        assert user._id() is not None
+
+    for x in range(100):
+        assert users.collection.find_one({'name': 'test_' + str(x)}) is not None
 
 
 @with_setup(setup_db)
@@ -149,7 +161,7 @@ def test_modelmapper_model_reload():
     user.username.set('Foo Bar')
     user.save()
 
-    users.collection.update({}, {'$set': {'username': 'Fumm Fumm'}})
+    users.update_one({}, {'$set': {'username': 'Fumm Fumm'}})
 
     user.reload()
 
@@ -182,6 +194,7 @@ def test_modelmapper_custom_id():
     user.name.set('Foo Bar')
 
     user.save(_id='foobar')
+    user.save()
 
     res = users.collection.find_one()
     expected = {'_id': 'foobar', 'name': 'Foo Bar'}

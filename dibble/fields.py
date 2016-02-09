@@ -74,12 +74,12 @@ class BaseField(object):
     @property
     def defined(self):
         """True if this Field was assigned a value"""
-        return (self._value is not undefined)
+        return self._value is not undefined
 
     @property
     def default(self):
         """default value of this Field"""
-        return (self._default() if isinstance(self._default, collections.Callable) else self._default)
+        return self._default() if isinstance(self._default, collections.Callable) else self._default
 
     @property
     def value(self):
@@ -87,7 +87,7 @@ class BaseField(object):
         if self._name != '_id':
             self._reload(force=False)
 
-        return (self._value if self.defined else None)
+        return self._value if self.defined else None
 
     def reset(self, value=unknown):
         """reset field to it's initial value or default value if no initial value was given. Can also be used to

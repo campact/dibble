@@ -108,9 +108,11 @@ After you've done your data manipulations, you want to persist your changes. To 
 
     model.save()
 
-Dibble defaults to safe=True, but that can be overridden this by passing safe=False::
+It is also possible to use custom IDs. Simply pass them to the save method::
 
-    model.save(safe=False)
+    model.save(_id='custom_id')
+
+Moreover, :class:`~pymongo.write_concern.WriteConcern` and :class:`~bson.codec_options.CodecOptions` can be passed.
 
 In any case :meth:`~dibble.model.Model.save` returns the ObjectId of the document.
 
@@ -134,11 +136,17 @@ results::
     models.count()
     models.skip(5).limit(10).sort('myotherfield', -1)
 
-Updating multiple documents
----------------------------
+If you need to change e.g. the :mod:`~pymongo.read_preferences` for a single read operation,
+use :meth:`~dibble.mapper.ModelMapper.with_options`::
 
-For updating multiple documents based on a query document simply use the :meth:`~dibble.mapper.ModelMapper.update`
-method of the mapper. This method simply proxies to :meth:`pymongo.collection.Collection.update`.
+    models = mapper.with_options(read_preference=pymongo.ReadPreference.PRIMARY).find()
+
+Manipulation managed collections
+--------------------------------
+
+For e.g. updating multiple documents based on a query document simply use the dibble.mapper.ModelMapper.update().
+This and all other methods simply proxy to the current :class:`pymongo.collection.Collection`.
+But do not forget to :meth:`~dibble.model.Model.reload` existing models after manipulating their documents directly.
 
 API Reference
 -------------
@@ -158,4 +166,5 @@ API Reference
     :members:
 
     .. automethod:: __call__
-
+    .. automethod:: __getattr__
+.. autoclass:: ModelCursor

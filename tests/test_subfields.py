@@ -14,9 +14,9 @@ class TestModel(dibble.model.Model):
 
 
 def get_db():
-    con = pymongo.MongoClient()
+    client = pymongo.MongoClient()
 
-    return con[DBNAME]
+    return client[DBNAME]
 
 
 def get_mapper():
@@ -28,7 +28,7 @@ def get_mapper():
 def setup_db():
     db = get_db()
     [db.drop_collection(x) for x in db.collection_names() if not x.startswith('system.')]
-    db.connection.drop_database(DBNAME)
+    db.client.drop_database(DBNAME)
 
 
 def test_subfield_access():

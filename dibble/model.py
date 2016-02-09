@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import warnings
+
 import pymongo
 from . import fields
 from .update import Update
@@ -116,7 +118,8 @@ class ModelBase(object):
             if not self._id.defined:
                 raise UnsavedModelError()
 
-            new = self._mapper.find_one({'_id': self._id.value}, read_preference=pymongo.ReadPreference.PRIMARY)
+            new = self._mapper.with_options(read_preference=pymongo.ReadPreference.PRIMARY).find_one(
+                {'_id': self._id.value})
 
             for name, field in new._fields.items():
                 if name in self._fields:
@@ -124,22 +127,32 @@ class ModelBase(object):
 
             self._requires_reload = False
 
-    def save(self, *arg, **kw):
+    def save(self, _id=None, codec_options=None, write_concern=None):
         """Save model data to database. Requires the model to be bound to a mapper first. Additional arguments
         will be passed to :meth:`~dibble.mapper.ModelMapper.save` method of the mapper.
+
+        :param _id: Write a custom id. This is only respected when the model was never saved before.
+        :param codec_options: See :class:`bson.codec_options.CodecOptions`
+        :param write_concern: See :class:`pymongo.write_concern.WriteConcern`
         """
         if not self._mapper:
             raise UnboundModelError()
 
         self._requires_reload = False
 
+        oid = None
         if self.is_new:
             doc = dict(self)
 
-            if '_id' in kw:
-                doc['_id'] = kw.pop('_id')
+            if _id:
+                doc['_id'] = _id
 
-            oid = self._mapper.save(doc, *arg, **kw)
+            result = self._mapper.with_options(codec_options=codec_options, write_concern=write_concern).insert_one(doc)
+
+            # Note: Despite the statement in the documentation of InsertOneResult it should be safe to access the
+            # id attribute even after unacknowledged writes (w=0) because the id is created in the driver.
+            # http://api.mongodb.org/python/3.0/api/pymongo/results.html#pymongo.results.InsertOneResult
+            oid = result.inserted_id
             self._id.reset(oid)
 
         else:
@@ -150,7 +163,8 @@ class ModelBase(object):
             # do not perform update with empty update document as
             # this would overwrite/clear existing data
             if upd:
-                self._mapper.update({'_id': oid}, upd, *arg, **kw)
+                self._mapper.with_options(codec_options=codec_options, write_concern=write_concern).update_one(
+                    {'_id': oid}, upd)
 
         self._update.clear()
         self._requires_reload = True
